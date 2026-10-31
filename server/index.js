@@ -10,11 +10,30 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-app.use(cors());
+// Allow requests from any origin (Vercel frontend, local dev)
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:5173',
+  process.env.FRONTEND_URL,
+].filter(Boolean);
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow no-origin (e.g. mobile/Postman) or listed origins
+    if (!origin || allowedOrigins.includes(origin) || /\.vercel\.app$/.test(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error(`CORS blocked for origin: ${origin}`));
+    }
+  },
+  credentials: true,
+}));
+
 app.use(express.json());
 
-// Serve static frontend build if dist exists
-app.use(express.static(path.join(__dirname, '../dist')));
+// Serve static frontend build from /dist in production
+const distPath = path.join(__dirname, '../dist');
+app.use(express.static(distPath));
 
 // In-memory state initialized with rich seed data
 let listings = JSON.parse(JSON.stringify(SAMPLE_LISTINGS));
@@ -423,11 +442,14 @@ app.post('/api/reset', (req, res) => {
   res.json({ success: true, message: 'Prototype data successfully reset to initial seed state.' });
 });
 
-// Wildcard fallback to serve index.html for non-API routes
+// Wildcard fallback – serve React app for non-API routes
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../dist/index.html'));
+  const indexFile = path.join(distPath, 'index.html');
+  res.sendFile(indexFile, (err) => {
+    if (err) res.status(200).send('NourishShare API is running.');
+  });
 });
 
 app.listen(PORT, () => {
-  console.log(`Food Donation Platform running on http://localhost:${PORT}`);
+  console.log(`NourishShare Food Donation Platform running on http://localhost:${PORT}`);
 });

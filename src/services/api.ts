@@ -2,7 +2,9 @@ import { FoodListing, UserProfile, UserReport, ImpactStats } from '../types';
 import { SAMPLE_LISTINGS, SAMPLE_USERS, SAMPLE_REPORTS, INITIAL_STATS } from '../mockData';
 
 // API client that interacts with Express API if available, falling back to LocalStorage
-const API_BASE = '/api';
+const API_BASE = import.meta.env.VITE_API_BASE_URL 
+  ? `${import.meta.env.VITE_API_BASE_URL.replace(/\/$/, '')}/api` 
+  : '/api';
 
 const isLocalStorageAvailable = () => typeof window !== 'undefined' && window.localStorage;
 
